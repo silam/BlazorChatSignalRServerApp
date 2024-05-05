@@ -1,0 +1,44 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorSignalRServerApp.Data
+@inject NavigationManager NavigationManager
+
+
+
+@code {
+    private List<NotificationMessage> allNotificationMsg = new List<NotificationMessage>();
+    private List<NotificationMessage> currentUserMsgList = new List<NotificationMessage>();
+    private NotificationMessage notificationMsg = new NotificationMessage();
+
+
+    private HubConnection hubConnection;
+    private string BoxCss = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/chatHub")).Build();
+
+        this.hubConnection.On<string, string, string, string>("ReceiveMessage", (senderName, receiverName, title, message) =>
+        {
+            allNotificationMsg.Add(new NotificationMessage()
+            {
+
+                MsgId = allNotificationMsg.Count() + 1,
+                SenderName = senderName,
+                ReceiverName = receiverName,
+                MsgTitle = title,
+                MsgBody = message
+
+            });
+
+            currentUserMsgList = allNotificationMsg.Where(x => x.SenderName != notificationMsg.SenderName).ToList();
+
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+
+    }
+
+}
